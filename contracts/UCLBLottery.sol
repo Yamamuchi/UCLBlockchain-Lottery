@@ -46,13 +46,11 @@ contract UCLBLottery is VRFConsumerBaseV2 {
     // Event to emit when randomness is returned
     event ReturnedRandomness(uint256[] randomWords);
 
-    /**
-     * @notice Constructor inherits VRFConsumerBaseV2
-     *
-     * @param subscriptionId - the subscription ID that this contract uses for funding requests
-     * @param vrfCoordinator - coordinator, check https://docs.chain.link/docs/vrf-contracts/#configurations
-     * @param keyHash - the gas lane to use, which specifies the maximum gas price to bump to
-     */
+    /// @notice Constructor inherits VRFConsumerBaseV2
+    /// @param subscriptionId - the subscription ID that this contract uses for funding requests
+    /// @param vrfCoordinator - the address of the Chainlink VRF Coordinator
+    /// @param keyHash - the gas lane to use, which specifies the maximum gas price to bump to
+    /// @param initialEntries - list of firstnames that are entered into the lottery
     constructor(
         uint64 subscriptionId,
         address vrfCoordinator,
@@ -69,13 +67,12 @@ contract UCLBLottery is VRFConsumerBaseV2 {
             entries[i] = initialEntries[i];
         }
 
+        // Set number of entries
         numberOfEntries = initialEntries.length;
     }
 
-    /**
-     * @notice Requests randomness
-     * Assumes the subscription is funded sufficiently; "Words" refers to unit of data in Computer Science
-     */
+    /// @notice Request random numbers from Chainlink VRF service
+    /// @dev Will call fulfillRandomWords once randomness is returned
     function requestRandomWords() external onlyOwner {
         // Will revert if subscription is not set and funded.
         s_requestId = COORDINATOR.requestRandomWords(
@@ -87,13 +84,15 @@ contract UCLBLottery is VRFConsumerBaseV2 {
         );
     }
 
-    /// @notice Callback function used by VRF Coordinator, computes 
+    /// @notice Callback function used by VRF Coordinator, computes the winners of the lottery
+    /// @dev Called by VRF Coordinator
     /// @param requestId - id of the request
     /// @param randomWords - array of random results from VRF Coordinator
     function fulfillRandomWords(uint256 requestId, uint256[] memory randomWords) internal override {
         // Using a local memory array to avoid unnecessary storage operations
         uint256[] memory processedWords = new uint256[](randomWords.length);
         
+        // Compute winners
         for (uint i = 0; i < randomWords.length; i++) {
             processedWords[i] = randomWords[i] % numberOfEntries;
             winners.push(Winner({
@@ -102,7 +101,7 @@ contract UCLBLottery is VRFConsumerBaseV2 {
             }));
         }
 
-        // Now, you can update the state variable once
+        // Set random numbers
         s_randomWords = processedWords;
         emit ReturnedRandomness(s_randomWords);
     }
