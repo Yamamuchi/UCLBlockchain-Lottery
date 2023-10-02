@@ -5,6 +5,7 @@
   },
   "dependencies": {
     "@chainlink/contracts": "^0.5.1",
-    "@chainlink/env-enc": "^1.0.5"
+    "@chainlink/env-enc": "^1.0.5",
+    "csv-parser": "^3.0.0"
   }
 }
