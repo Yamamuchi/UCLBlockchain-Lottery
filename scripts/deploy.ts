@@ -1,12 +1,51 @@
 import * as dotenvenc from '@chainlink/env-enc'
 import { ethers } from "hardhat";
 
+import * as fs from 'fs';
+import csv from 'csv-parser';
+
+async function getFirstNamesFromCsv(filePath: string): Promise<string[]> {
+  return new Promise((resolve, reject) => {
+      const names: string[] = [];
+      
+      fs.createReadStream(filePath)
+          .pipe(csv())
+          .on('data', (row) => {
+              const fullName: string = row["Full name"];
+              const firstName: string = fullName.split(' ')[0].trim();
+              names.push(firstName);
+          })
+          .on('end', () => {
+              resolve(names);
+          })
+          .on('error', reject);
+  });
+}
+
 async function main() {
-  const UCLBLottery = await ethers.deployContract("UCLBLottery");
+  // These are your constructor arguments
+  const subscriptionId = 5755;
+  const vrfCoordinator = '0x8103B0A8A00be2DDC778e6e7eaa21791Cd364625';
+  const keyHash = '0x474e34a077df58807dbe9c96d3c009b23b3c6d0cce433e59bbf5b34f823bc56c';
+  const firstNames = await getFirstNamesFromCsv('../UCLBlockchain-Lottery/datasets/entries.xls');
+
+  console.log("First names:", firstNames)
+  console.log("Deploying contract...");
+
+  // Deploy your contract with the constructor arguments
+  const UCLBLottery = await ethers.deployContract("UCLBLottery", [subscriptionId, vrfCoordinator, keyHash, firstNames]);
+
   await UCLBLottery.waitForDeployment();
+  console.log(UCLBLottery)
+  console.log("UCLBLottery address:", UCLBLottery.target);
 
-  console.log("UCLBLottery deployed to:", UCLBLottery.address);
+  await UCLBLottery.deploymentTransaction()!.wait(7);
 
+  await run("verify:verify", {
+    address: UCLBLottery.target,
+    constructorArguments: [subscriptionId, vrfCoordinator, keyHash, firstNames],
+    contract: "contracts/UCLBLottery.sol:UCLBLottery"
+});
 }
 
 // We recommend this pattern to be able to use async/await everywhere
