@@ -1,5 +1,4 @@
 // SPDX-License-Identifier: MIT
-// An example of a consumer contract that relies on a subscription for funding.
 pragma solidity ^0.8.9;
 
 import "@chainlink/contracts/src/v0.8/interfaces/VRFCoordinatorV2Interface.sol";
@@ -7,44 +6,44 @@ import "@chainlink/contracts/src/v0.8/VRFConsumerBaseV2.sol";
 
 
 contract UCLBLottery is VRFConsumerBaseV2 {
+    // The address of the Chainlink VRF Coordinator
     VRFCoordinatorV2Interface immutable COORDINATOR;
 
-    // Your subscription ID.
+    // The subscription ID that this contract uses for funding requests
     uint64 immutable s_subscriptionId;
 
-    // The gas lane to use, which specifies the maximum gas price to bump to.
-    // For a list of available gas lanes on each network,
-    // see https://docs.chain.link/docs/vrf-contracts/#configurations
+    // The gas lane to use, which specifies the maximum gas price to bump to
     bytes32 immutable s_keyHash;
 
-    // Depends on the number of requested values that you want sent to the
-    // fulfillRandomWords() function. Storing each word costs about 20,000 gas,
-    // so 100,000 is a safe default for this example contract. Test and adjust
-    // this limit based on the network that you select, the size of the request,
-    // and the processing of the callback request in the fulfillRandomWords()
-    // function.
+    // The gas limit for the callback function.
     uint32 constant CALLBACK_GAS_LIMIT = 2500000;
 
-    // The default is 3, but you can set this higher.
+    // The number of confirmations to wait for before the oracle responds.
     uint16 constant REQUEST_CONFIRMATIONS = 3;
 
-    // For this example, retrieve 2 random values in one request.
-    // Cannot exceed VRFCoordinatorV2.MAX_NUM_WORDS.
+    // The number of random words (numbers) requested from the Chainlink VRF service.
     uint32 constant NUM_WORDS = 4;
 
     uint256[] public s_randomWords;
     uint256 public s_requestId;
     address s_owner;
 
+    // Mapping of entry ID to entry first name
     mapping (uint256 => string) public entries;
 
+    // Struct to store winner information
     struct Winner {
         uint256 id;
         string name;
     }
 
+    // Array of winners
     Winner[] public winners;
 
+    // Number of entries to the lottery
+    uint256 numberOfEntries;
+
+    // Event to emit when randomness is returned
     event ReturnedRandomness(uint256[] randomWords);
 
     /**
@@ -69,6 +68,8 @@ contract UCLBLottery is VRFConsumerBaseV2 {
         for (uint256 i = 0; i < initialEntries.length; i++) {
             entries[i] = initialEntries[i];
         }
+
+        numberOfEntries = initialEntries.length;
     }
 
     /**
@@ -86,18 +87,15 @@ contract UCLBLottery is VRFConsumerBaseV2 {
         );
     }
 
-    /**
-     * @notice Callback function used by VRF Coordinator
-     *
-     * @param requestId - id of the request
-     * @param randomWords - array of random results from VRF Coordinator
-     */
+    /// @notice Callback function used by VRF Coordinator, computes 
+    /// @param requestId - id of the request
+    /// @param randomWords - array of random results from VRF Coordinator
     function fulfillRandomWords(uint256 requestId, uint256[] memory randomWords) internal override {
         // Using a local memory array to avoid unnecessary storage operations
         uint256[] memory processedWords = new uint256[](randomWords.length);
         
         for (uint i = 0; i < randomWords.length; i++) {
-            processedWords[i] = randomWords[i] % 67;
+            processedWords[i] = randomWords[i] % numberOfEntries;
             winners.push(Winner({
                 id: processedWords[i],
                 name: entries[processedWords[i]]
@@ -106,6 +104,7 @@ contract UCLBLottery is VRFConsumerBaseV2 {
 
         // Now, you can update the state variable once
         s_randomWords = processedWords;
+        emit ReturnedRandomness(s_randomWords);
     }
 
     modifier onlyOwner() {
