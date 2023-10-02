@@ -93,19 +93,19 @@ contract UCLBLottery is VRFConsumerBaseV2 {
      * @param randomWords - array of random results from VRF Coordinator
      */
     function fulfillRandomWords(uint256 requestId, uint256[] memory randomWords) internal override {
-        s_randomWords = randomWords;
-
-        for (uint i = 0; i < s_randomWords.length; i++) {
-            s_randomWords[i] = s_randomWords[i] % 67;
+        // Using a local memory array to avoid unnecessary storage operations
+        uint256[] memory processedWords = new uint256[](randomWords.length);
+        
+        for (uint i = 0; i < randomWords.length; i++) {
+            processedWords[i] = randomWords[i] % 67;
+            winners.push(Winner({
+                id: processedWords[i],
+                name: entries[processedWords[i]]
+            }));
         }
 
-        // Populate the winners array
-        for (uint i = 0; i < s_randomWords.length; i++) {
-            winners[i] = Winner({
-                id: s_randomWords[i],
-                name: entries[s_randomWords[i]]
-            });
-        }
+        // Now, you can update the state variable once
+        s_randomWords = processedWords;
     }
 
     modifier onlyOwner() {
