@@ -1,9 +1,8 @@
-import * as dotenvenc from '@chainlink/env-enc'
 import { ethers } from "hardhat";
-
 import * as fs from 'fs';
 import csv from 'csv-parser';
 
+// Extract first names from the entries dataset
 async function getFirstNamesFromCsv(filePath: string): Promise<string[]> {
   return new Promise((resolve, reject) => {
       const names: string[] = [];
@@ -23,24 +22,25 @@ async function getFirstNamesFromCsv(filePath: string): Promise<string[]> {
 }
 
 async function main() {
-  // These are your constructor arguments
+  // Constructor arguments
   const subscriptionId = 5755;
   const vrfCoordinator = '0x8103B0A8A00be2DDC778e6e7eaa21791Cd364625';
   const keyHash = '0x474e34a077df58807dbe9c96d3c009b23b3c6d0cce433e59bbf5b34f823bc56c';
   const firstNames = await getFirstNamesFromCsv('../UCLBlockchain-Lottery/datasets/entries.xls');
 
-  console.log("First names:", firstNames)
   console.log("Deploying contract...");
 
-  // Deploy your contract with the constructor arguments
+  // Deploy lottery contract with the constructor arguments
   const UCLBLottery = await ethers.deployContract("UCLBLottery", [subscriptionId, vrfCoordinator, keyHash, firstNames]);
 
   await UCLBLottery.waitForDeployment();
   console.log(UCLBLottery)
   console.log("UCLBLottery address:", UCLBLottery.target);
 
+  // Wait for 7 confirmations
   await UCLBLottery.deploymentTransaction()!.wait(7);
 
+  // Verify contract on Etherscan
   await run("verify:verify", {
     address: UCLBLottery.target,
     constructorArguments: [subscriptionId, vrfCoordinator, keyHash, firstNames],
