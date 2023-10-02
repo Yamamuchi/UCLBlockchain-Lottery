@@ -5,11 +5,8 @@ pragma solidity ^0.8.9;
 import "@chainlink/contracts/src/v0.8/interfaces/VRFCoordinatorV2Interface.sol";
 import "@chainlink/contracts/src/v0.8/VRFConsumerBaseV2.sol";
 
-/**
- * @title The RandomNumberConsumerV2 contract
- * @notice A contract that gets random values from Chainlink VRF V2
- */
-contract RandomNumberConsumerV2 is VRFConsumerBaseV2 {
+
+contract UCLBLottery is VRFConsumerBaseV2 {
     VRFCoordinatorV2Interface immutable COORDINATOR;
 
     // Your subscription ID.
