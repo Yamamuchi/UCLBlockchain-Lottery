@@ -23,18 +23,27 @@ contract UCLBLottery is VRFConsumerBaseV2 {
     // this limit based on the network that you select, the size of the request,
     // and the processing of the callback request in the fulfillRandomWords()
     // function.
-    uint32 constant CALLBACK_GAS_LIMIT = 100000;
+    uint32 constant CALLBACK_GAS_LIMIT = 2500000;
 
     // The default is 3, but you can set this higher.
     uint16 constant REQUEST_CONFIRMATIONS = 3;
 
     // For this example, retrieve 2 random values in one request.
     // Cannot exceed VRFCoordinatorV2.MAX_NUM_WORDS.
-    uint32 constant NUM_WORDS = 2;
+    uint32 constant NUM_WORDS = 4;
 
     uint256[] public s_randomWords;
     uint256 public s_requestId;
     address s_owner;
+
+    mapping (uint256 => string) public entries;
+
+    struct Winner {
+        uint256 id;
+        string name;
+    }
+
+    Winner[] public winners;
 
     event ReturnedRandomness(uint256[] randomWords);
 
@@ -48,12 +57,18 @@ contract UCLBLottery is VRFConsumerBaseV2 {
     constructor(
         uint64 subscriptionId,
         address vrfCoordinator,
-        bytes32 keyHash
+        bytes32 keyHash,
+        string[] memory initialEntries
     ) VRFConsumerBaseV2(vrfCoordinator) {
         COORDINATOR = VRFCoordinatorV2Interface(vrfCoordinator);
         s_keyHash = keyHash;
         s_owner = msg.sender;
         s_subscriptionId = subscriptionId;
+
+        // Populate entries mapping
+        for (uint256 i = 0; i < initialEntries.length; i++) {
+            entries[i] = initialEntries[i];
+        }
     }
 
     /**
@@ -79,7 +94,18 @@ contract UCLBLottery is VRFConsumerBaseV2 {
      */
     function fulfillRandomWords(uint256 requestId, uint256[] memory randomWords) internal override {
         s_randomWords = randomWords;
-        emit ReturnedRandomness(randomWords);
+
+        for (uint i = 0; i < s_randomWords.length; i++) {
+            s_randomWords[i] = s_randomWords[i] % 67;
+        }
+
+        // Populate the winners array
+        for (uint i = 0; i < s_randomWords.length; i++) {
+            winners[i] = Winner({
+                id: s_randomWords[i],
+                name: entries[s_randomWords[i]]
+            });
+        }
     }
 
     modifier onlyOwner() {
