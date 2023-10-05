@@ -21,9 +21,6 @@ contract UCLBLottery is VRFConsumerBaseV2 {
     // The number of confirmations to wait for before the oracle responds.
     uint16 constant REQUEST_CONFIRMATIONS = 3;
 
-    // The number of random words (numbers) requested from the Chainlink VRF service.
-    uint32 constant NUM_WORDS = 4;
-
     uint256[] public s_randomWords;
     uint256 public s_requestId;
     address s_owner;
@@ -73,14 +70,14 @@ contract UCLBLottery is VRFConsumerBaseV2 {
 
     /// @notice Request random numbers from Chainlink VRF service
     /// @dev Will call fulfillRandomWords once randomness is returned
-    function requestRandomWords() external onlyOwner {
+    function requestRandomWords(uint32 _numWords) external onlyOwner {
         // Will revert if subscription is not set and funded.
         s_requestId = COORDINATOR.requestRandomWords(
             s_keyHash,
             s_subscriptionId,
             REQUEST_CONFIRMATIONS,
             CALLBACK_GAS_LIMIT,
-            NUM_WORDS
+            _numWords
         );
     }
 
